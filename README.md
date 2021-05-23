@@ -1,6 +1,6 @@
-# Foobar
+# Iroha metrics reader
 
-Foobar is a Python library for dealing with word pluralization.
+This repository for interaction with Iroha and get metrics through Prometheus endpoint.
 
 ## Installation
 
