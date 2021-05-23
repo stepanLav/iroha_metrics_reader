@@ -2,16 +2,10 @@
 
 This repository for interaction with Iroha and get metrics through Prometheus endpoint.
 
-## Installation
-
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install foobar.
-
-```bash
-pip install locust
-```
-
 ## Run
 ```bash
+make
+...
 locust -f ./reader/metrics_reader.py -u 1 -r 1 --headless
 ```
 
