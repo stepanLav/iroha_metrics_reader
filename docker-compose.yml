@@ -9,8 +9,3 @@ services:
       - ./reader:/app
     environment:
     - "HOSTNAME=s1.tst.iroha.tech:8080,s2.tst.iroha.tech:8080,s3.tst.iroha.tech:8080,s4.tst.iroha.tech:8080"
-    logging:
-        driver: "json-file"
-        options:
-          max-size: "100m"
-          max-file: "3"
