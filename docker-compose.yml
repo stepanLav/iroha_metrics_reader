@@ -1,0 +1,16 @@
+version: "3.5"
+services:
+  python-script:
+    container_name: python-script
+    build: ./
+    image: stlavrdocker/iroha-metrics:latest
+    working_dir: /app
+    volumes:
+      - ./reader:/app
+    environment:
+    - "HOSTNAME=s1.tst.iroha.tech:8080,s2.tst.iroha.tech:8080,s3.tst.iroha.tech:8080,s4.tst.iroha.tech:8080"
+    logging:
+        driver: "json-file"
+        options:
+          max-size: "100m"
+          max-file: "3"

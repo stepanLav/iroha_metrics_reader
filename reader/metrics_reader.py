@@ -2,9 +2,10 @@ from prometheus_client.parser import text_string_to_metric_families
 import datetime
 import requests
 import logging
+import os
 
 
-HOSTNAME = ["http://localhost:3456", "http://localhost:3457", "http://localhost:3458", "http://localhost:3459"]
+HOSTNAME = os.environ["HOSTNAME"]
 
 class Nodes():
 
@@ -61,7 +62,7 @@ def Average(lst):
     return sum(lst) / len(lst)
 
 def RequestToNode(url):
-    r =requests.get('%s/metrics' % url)
+    r =requests.get('https://%s/metrics' % url)
     return r.text
 
 if __name__ == "__main__":
