@@ -5,7 +5,7 @@ import logging
 import os
 
 
-HOSTNAME = os.environ["HOSTNAME"]
+HOSTNAME = os.environ["HOSTNAME"].split(',')
 
 class Nodes():
 
