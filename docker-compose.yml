@@ -9,3 +9,14 @@ services:
       - ./reader:/app
     environment:
     - "HOSTNAME=s1.tst.iroha.tech:8080,s2.tst.iroha.tech:8080,s3.tst.iroha.tech:8080,s4.tst.iroha.tech:8080"
+    networks:
+      - iroha-net
+      - traefik-net
+
+networks:
+  iroha-net:
+    external:
+      name: iroha-net
+  traefik-net:
+    external:
+      name: traefik-net

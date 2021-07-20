@@ -62,7 +62,7 @@ def Average(lst):
     return sum(lst) / len(lst)
 
 def RequestToNode(url):
-    r =requests.get('https://%s/metrics' % url)
+    r =requests.get('https://{}/metrics'.format(url))
     return r.text
 
 if __name__ == "__main__":
