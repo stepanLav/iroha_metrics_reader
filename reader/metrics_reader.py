@@ -1,8 +1,8 @@
-import datetime
 from prometheus_client.parser import text_string_to_metric_families
-import time
+import datetime
 import requests
-import sys
+import logging
+
 
 HOSTNAME = ["http://localhost:3456", "http://localhost:3457", "http://localhost:3458", "http://localhost:3459"]
 
@@ -22,13 +22,17 @@ class Nodes():
         return return_value
 
     def compare_blocks_height(self):
+        compare_array=[]
         for node in self.nodes:
             if (self.max_block_height < node.blocks_height):
                 self.max_block_height = node.blocks_height
             compare = self.max_block_height - node.blocks_height
             if compare > self.max_block_diff:
                 self.max_block_diff = compare
-        print('{}\n   Max block height = {}\n   Current difference = {}\n   Max difference = {}'.format(datetime.datetime.now(), self.max_block_height, compare, self.max_block_diff))
+            compare_array.append(compare)
+        message = '{}\n   Max block height = {}\n   Current difference = {}\n   Max difference = {}'.format(datetime.datetime.now(), self.max_block_height, compare_array, self.max_block_diff)
+        logger.info(message)
+
 
     def update_node_data(self):
         for node in self.nodes:
@@ -62,6 +66,13 @@ def RequestToNode(url):
 
 if __name__ == "__main__":
     # execute only if run as a script
+    logger = logging.getLogger()
+    fh = logging.FileHandler('myLog.log')
+    ch = logging.StreamHandler()
+    logger.setLevel(logging.INFO)
+    logger.addHandler(ch)
+    logger.addHandler(fh)
+
     nodes = Nodes(HOSTNAME)
     while True:
         nodes.update_node_data()
