@@ -1,96 +1,68 @@
-from locust import HttpUser, task, between
+import datetime
 from prometheus_client.parser import text_string_to_metric_families
-from datetime import datetime
+import time
+import requests
 import sys
 
-HOSTNAME = ["http://localhost:3451", "http://localhost:3452", "http://localhost:3453", "http://localhost:3454"]
-current_block = 1.0
-transactions = 0.0
-need_incremet = bool(False)
-start = datetime.now()
-total_transaction = 0
-avg_tps = []
+HOSTNAME = ["http://localhost:3456", "http://localhost:3457", "http://localhost:3458", "http://localhost:3459"]
 
-class PrometheusListener(HttpUser):
-    global HOSTNAME
-    def __init__(self, *args, **kwargs):
-        self.host = HOSTNAME.pop(0)
-        super(PrometheusListener, self).__init__(*args, **kwargs)
-    wait_time = between(5, 5)
-    print(datetime.now, "Starting metrics")
+class Nodes():
 
-    @task
-    def get_metrics(self):
-        response = self.client.get("/metrics")
-        try:
-            test = response.content.split(bytes("# HELP", 'utf-8'))
-        except:
-            print(datetime.now(), "Endpoint not answered, maybe node was restarted?")
-        else:
-            for line in test:
-                if(line == b''):
-                    continue
-                else: result = b"# HELP" + line
-                str_resultstr=(result.decode("utf-8"))
-                for family in text_string_to_metric_families(str_resultstr):
-                    for sample in family.samples:
-                        global current_block
-                        global need_incremet
-                        global transactions
-                        global start
-                        global total_transaction
-                        if (sample[0] == "blocks_height"):
-                            if (current_block == 0):
-                                current_block == sample[2]
-                            if (current_block != sample[2]):
-                                current_block = sample[2]
-                                need_incremet = True
-                        if (sample[0] == "number_of_signatures_in_last_block"):
-                            if(need_incremet):
-                                transactions += sample[2]
-                                need_incremet = False
-                        if (sample[0] == "total_number_of_transactions"):
-                            if(total_transaction == 0):
-                                total_transaction = sample[2]
-                            calculate = (datetime.now()-start).total_seconds()
-                            if(calculate > 10):
-                                tps = (sample[2] - total_transaction)/10
-                                total_transaction = sample[2]
-                                start = datetime.now()
-                                avg_tps.append(tps)
-                                print('''=====================\nNow TPS is: {}\n=====================\n'''
-                                .format(tps))
-                                print('''\nAVG_TPS by last 100 sec. is: {}\n=====================\n'''
-                                .format(Average(avg_tps)))
-                                if (len(avg_tps) > 10):
-                                    avg_tps.pop(0)
+    nodes = []
+    max_block_height = 0
+    max_block_diff = 0
+    def __init__(self, urls):
+        for node in urls:
+            self.nodes.append(Node(node))
 
-                        print("Name: {0} Labels: {1} Value: {2}".format(*sample))
-            print(datetime.now(),"=========================================================", self.host)
+    def get_blocks_height(self):
+        return_value = {}
+        for node in self.nodes:
+            return_value[node.url] = node.blocks_height
+        return return_value
+
+    def compare_blocks_height(self):
+        for node in self.nodes:
+            if (self.max_block_height < node.blocks_height):
+                self.max_block_height = node.blocks_height
+            compare = self.max_block_height - node.blocks_height
+            if compare > self.max_block_diff:
+                self.max_block_diff = compare
+        print('{}\n   Max block height = {}\n   Current difference = {}\n   Max difference = {}'.format(datetime.datetime.now(), self.max_block_height, compare, self.max_block_diff))
+
+    def update_node_data(self):
+        for node in self.nodes:
+            node.update_data()
+
+
+class Node():
+    def __init__(self, url):
+        self.url = url
+        self.blocks_height = 0
+        self.number_of_signatures_in_last_block = 0
+        self.total_number_of_transactions = 0
+
+    def update_data(self):
+        data = RequestToNode(self.url)
+        for family in text_string_to_metric_families(data):
+            for sample in family.samples:
+                if (sample[0] == "blocks_height"):
+                    self.blocks_height = sample[2]
+                if (sample[0] == "number_of_signatures_in_last_block"):
+                    self.number_of_signatures_in_last_block = sample[2]
+                if (sample[0] == "total_number_of_transactions"):
+                    self.total_number_of_transactions = sample[2]
 
 def Average(lst):
     return sum(lst) / len(lst)
 
-class LogToFile(object):
-    def __init__(self, name, mode):
-        self.file = open(name, mode)
-        self.stdout = sys.stdout
+def RequestToNode(url):
+    r =requests.get('%s/metrics' % url)
+    return r.text
 
-    def __del__(self):
-        self.close()
-
-    def write(self, data):
-        self.stdout.write(data)
-        self.file.write(data)
-
-    def flush(self):
-        self.stdout.flush()
-        self.file.flush()
-
-    def close(self):
-        if sys.stdout is self:
-            sys.stdout = self.stdout
-        self.file.close()
-
-
-sys.stdout = LogToFile('log.txt', 'a')
+if __name__ == "__main__":
+    # execute only if run as a script
+    nodes = Nodes(HOSTNAME)
+    while True:
+        nodes.update_node_data()
+        nodes.compare_blocks_height()
